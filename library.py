@@ -1,8 +1,8 @@
 from book import Book
 
 class Library:
-    def __init__(self):
-        self.books = []  # Список книг в библиотеке
+    def __init__(self, books = []):
+        self.books = books # Список книг в библиотеке
 
     def add_book(self, book):
         self.books.append(book)  # Добавляем книгу в библиотеку
@@ -26,3 +26,9 @@ class Library:
                 print(f"You have returned '{book.title}'")
                 return
         print(f"'{title}' was not borrowed.")
+
+    def get_book(self, title):
+        for book in self.books:
+            if book.title == title:
+                return book
+        return None
