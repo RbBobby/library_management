@@ -1,5 +1,17 @@
-from library import PublicLibrary, SchoolLibrary, DigitalLibrary
+from library import Library, PublicLibrary, SchoolLibrary, DigitalLibrary
 from book import Book
+
+
+def demo_library(library: Library, title: str):
+    """Работаем с любой библиотекой через абстрактный интерфейс Library.
+
+    Не важно, PublicLibrary это или DigitalLibrary —
+    у всех есть display_books / borrow_book / return_book.
+    """
+    print(f"\n--- Demo: {library.name} ({type(library).__name__}) ---")
+    library.display_books()
+    library.borrow_book(title)
+    library.return_book(title)
 
 
 def main():
@@ -21,7 +33,7 @@ def main():
     public.borrow_book("1984")
     public.return_book("1984")
 
-    # Школьная библиотека: дубликаты запрещены, лимит выдач = 2
+    # Школьная библиотека: дубликаты запрещены, лимит выдач = 1
     school = SchoolLibrary(name="School No. 5", max_borrowed=1)
     school.add_book(Book("1984", "George Orwell"))
     school.add_book(Book("The Great Gatsby", "F. Scott Fitzgerald"))
@@ -45,6 +57,11 @@ def main():
     print("After download:")
     digital.display_books()  # 1984 всё ещё Available
     digital.return_book("1984")
+
+    # Абстракция: одна функция — разные типы библиотек
+    print("\n=== Abstraction demo ===")
+    for lib in [public, school, digital]:
+        demo_library(lib, "1984")
 
 
 if __name__ == "__main__":

@@ -1,47 +1,81 @@
-class Library:
-    """Базовый класс библиотеки: общее поведение для всех разновидностей."""
+from abc import ABC, abstractmethod
+
+
+class Library(ABC):
+    """Абстрактная библиотека — учебный пример абстракции.
+
+    Описывает общий контракт: любая библиотека умеет показывать каталог,
+    выдавать и принимать книги. Создавать Library() напрямую нельзя —
+    нужен конкретный тип: PublicLibrary, SchoolLibrary, DigitalLibrary.
+
+    В дебаггере смотрите _books и _name.
+    """
 
     def __init__(self, books=None, name="Library"):
-        # None вместо [] — чтобы у разных библиотек не было общего списка
-        self.books = list(books) if books is not None else []
-        self.name = name
+        self._books = list(books) if books is not None else []
+        self._name = name
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def books(self):
+        return list(self._books)
 
     def add_book(self, book):
-        self.books.append(book)
-
-    def display_books(self):
-        print(f"[{self.name}]")
-        for book in self.books:
-            print(book)
-
-    def borrow_book(self, title):
-        for book in self.books:
-            if book.title == title and book.is_available:
-                book.is_available = False
-                print(f"You have borrowed '{book.title}' from {self.name}")
-                return
-        print(f"'{title}' is not available for borrowing.")
-
-    def return_book(self, title):
-        for book in self.books:
-            if book.title == title and not book.is_available:
-                book.is_available = True
-                print(f"You have returned '{book.title}' to {self.name}")
-                return
-        print(f"'{title}' was not borrowed.")
+        self._books.append(book)
 
     def get_book(self, title):
-        for book in self.books:
+        for book in self._books:
             if book.title == title:
                 return book
         return None
 
     def available_count(self):
         count = 0
-        for book in self.books:
+        for book in self._books:
             if book.is_available:
                 count += 1
         return count
+
+    def _print_books(self):
+        """Общая реализация: печать списка книг (переиспользуют наследники)."""
+        for book in self._books:
+            print(book)
+
+    def _borrow_physical_book(self, title):
+        """Общая логика выдачи бумажной книги."""
+        for book in self._books:
+            if book.title == title and book.is_available:
+                book.borrow()
+                print(f"You have borrowed '{book.title}' from {self._name}")
+                return
+        print(f"'{title}' is not available for borrowing.")
+
+    def _return_physical_book(self, title):
+        """Общая логика возврата бумажной книги."""
+        for book in self._books:
+            if book.title == title and not book.is_available:
+                book.give_back()
+                print(f"You have returned '{book.title}' to {self._name}")
+                return
+        print(f"'{title}' was not borrowed.")
+
+    @abstractmethod
+    def display_books(self):
+        """Показать каталог. Формат зависит от типа библиотеки."""
+
+    @abstractmethod
+    def borrow_book(self, title):
+        """Выдать книгу. Правила зависят от типа библиотеки."""
+
+    @abstractmethod
+    def return_book(self, title):
+        """Вернуть книгу. Правила зависят от типа библиотеки."""
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(name={self._name!r}, books={len(self._books)})"
 
 
 class PublicLibrary(Library):
@@ -49,12 +83,21 @@ class PublicLibrary(Library):
 
     def __init__(self, books=None, name="Public Library", city="Unknown"):
         super().__init__(books=books, name=name)
-        self.city = city
+        self._city = city
+
+    @property
+    def city(self):
+        return self._city
 
     def display_books(self):
-        print(f"[{self.name} — {self.city}]")
-        for book in self.books:
-            print(book)
+        print(f"[{self._name} — {self._city}]")
+        self._print_books()
+
+    def borrow_book(self, title):
+        self._borrow_physical_book(title)
+
+    def return_book(self, title):
+        self._return_physical_book(title)
 
 
 class SchoolLibrary(Library):
@@ -62,7 +105,11 @@ class SchoolLibrary(Library):
 
     def __init__(self, books=None, name="School Library", max_borrowed=2):
         super().__init__(books=books, name=name)
-        self.max_borrowed = max_borrowed
+        self._max_borrowed = max_borrowed
+
+    @property
+    def max_borrowed(self):
+        return self._max_borrowed
 
     def add_book(self, book):
         if self.get_book(book.title) is not None:
@@ -70,15 +117,22 @@ class SchoolLibrary(Library):
             return
         super().add_book(book)
 
+    def display_books(self):
+        print(f"[{self._name}]")
+        self._print_books()
+
     def borrow_book(self, title):
-        borrowed_now = len(self.books) - self.available_count()
-        if borrowed_now >= self.max_borrowed:
+        borrowed_now = len(self._books) - self.available_count()
+        if borrowed_now >= self._max_borrowed:
             print(
                 f"Borrow limit reached in {self.name} "
-                f"(max {self.max_borrowed}). Return a book first."
+                f"(max {self._max_borrowed}). Return a book first."
             )
             return
-        super().borrow_book(title)
+        self._borrow_physical_book(title)
+
+    def return_book(self, title):
+        self._return_physical_book(title)
 
 
 class DigitalLibrary(Library):
@@ -87,12 +141,15 @@ class DigitalLibrary(Library):
     def __init__(self, books=None, name="Digital Library"):
         super().__init__(books=books, name=name)
 
+    def display_books(self):
+        print(f"[{self._name} — digital]")
+        self._print_books()
+
     def borrow_book(self, title):
         book = self.get_book(title)
         if book is None:
             print(f"'{title}' is not available for borrowing.")
             return
-        # Цифровая копия: скачали, но физически книга не «уходит»
         print(f"You have downloaded '{book.title}' from {self.name}")
 
     def return_book(self, title):
